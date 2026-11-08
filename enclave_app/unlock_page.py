@@ -6,8 +6,8 @@ from typing import Callable, List, Optional
 
 from PyQt6.QtCore import QTimer, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
-    QApplication, QCheckBox, QComboBox, QInputDialog, QFileDialog, QFrame, QGridLayout, QHBoxLayout, QLineEdit, QMenu,
-    QStackedWidget, QVBoxLayout, QWidget,
+    QApplication, QCheckBox, QComboBox, QInputDialog, QFileDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu,
+    QPushButton, QStackedWidget, QVBoxLayout, QWidget,
 )
 
 from config import load_config, save_config
@@ -156,15 +156,21 @@ class UnlockPage(QWidget):
         layout.addWidget(self.recover_button, 0, Qt.AlignmentFlag.AlignLeft)
         layout.addSpacing(4)
         layout.addWidget(horizontal_rule())
-        layout.addWidget(label(tr("Güvenlik"), "Eyebrow"))
+        sec_card = QFrame()
+        sec_card.setObjectName("Card")
+        sec_l = QVBoxLayout(sec_card)
+        sec_l.setContentsMargins(14, 12, 14, 12)
+        sec_l.setSpacing(8)
+        sec_l.addWidget(label(tr("Güvenlik Politikası"), "Eyebrow"))
         idle_row = QHBoxLayout()
         idle_row.setSpacing(10)
         idle_row.addWidget(label(tr("Hareketsizlikte kilitle"), "Muted", wrap=False))
         idle_row.addWidget(self.idle)
         idle_row.addStretch(1)
-        layout.addLayout(idle_row)
-        layout.addWidget(self.lock_minimize)
-        layout.addWidget(label(tr("Windows kilitlendiğinde açık kasa her zaman kilitlenir."), "Muted"))
+        sec_l.addLayout(idle_row)
+        sec_l.addWidget(self.lock_minimize)
+        sec_l.addWidget(label(tr("Windows kilitlendiğinde açık kasa her zaman kilitlenir."), "Muted"))
+        layout.addWidget(sec_card)
         return step
 
     def _code_step(self) -> QWidget:
@@ -287,10 +293,39 @@ class UnlockPage(QWidget):
         self.recent_box.show()
         self._recent_title = tr("Hatırlanan kasalar ({})", len(existing))
         for path in existing:
-            item = button(Path(path).stem, "RecentVault", lambda p=path: self.set_vault(p),
-                          self.theme.icon("lock", self.theme.palette.muted))
-            item.setToolTip(path)
-            self.recent_list_layout.addWidget(item)
+            card = QPushButton()
+            card.setObjectName("RecentVaultCard")
+            card.setToolTip(path)
+            card.setCursor(Qt.CursorShape.PointingHandCursor)
+            c_l = QHBoxLayout(card)
+            c_l.setContentsMargins(10, 8, 10, 8)
+            c_l.setSpacing(10)
+
+            ic = QLabel()
+            ic.setPixmap(self.theme.icon("shield", self.theme.palette.accent, size=18).pixmap(18, 18))
+            ic.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            c_l.addWidget(ic)
+
+            text_col = QVBoxLayout()
+            text_col.setSpacing(1)
+            name_lbl = QLabel(Path(path).stem)
+            name_lbl.setStyleSheet("font-weight: 600; font-size: 13px;")
+            name_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            text_col.addWidget(name_lbl)
+
+            dir_lbl = QLabel(str(Path(path).parent))
+            dir_lbl.setStyleSheet(f"color: {self.theme.palette.muted}; font-size: 11px;")
+            dir_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            text_col.addWidget(dir_lbl)
+            c_l.addLayout(text_col, 1)
+
+            action_lbl = QLabel(f"[{tr('AÇ')}]")
+            action_lbl.setStyleSheet(f"color: {self.theme.palette.accent}; font-weight: 600; font-size: 11px;")
+            action_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            c_l.addWidget(action_lbl)
+
+            card.clicked.connect(lambda _c=False, p=path: self.set_vault(p))
+            self.recent_list_layout.addWidget(card)
         self._set_recent_open(False)
         if not self.path_edit.text():
             self.set_vault(existing[0])
@@ -304,7 +339,8 @@ class UnlockPage(QWidget):
     def _set_recent_open(self, opened: bool) -> None:
         self._recent_open = opened
         self.recent_list.setVisible(opened)
-        self.recent_toggle.setText(("▾  " if opened else "▸  ") + self._recent_title)
+        mode = tr("GİZLE") if opened else tr("GÖSTER")
+        self.recent_toggle.setText(f"[{mode}]  {self._recent_title}")
 
     def set_vault(self, path: str) -> None:
         self._set_recent_open(False)

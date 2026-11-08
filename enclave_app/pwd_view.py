@@ -33,17 +33,18 @@ from .pwd_engine import (
     evaluate_password, get_live_totp
 )
 
-class EntryListItemWidget(QWidget):
+class EntryListItemWidget(QFrame):
     """Orta sütundaki liste öğesi için kart bileşeni."""
 
     def __init__(self, entry: PasswordEntry, theme: Theme, parent: Optional[QWidget] = None):
         super().__init__(parent)
+        self.setObjectName("EntryCard")
         self.entry = entry
         self.theme = theme
 
         p = theme.palette
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(10)
 
         icon_name = TYPE_ICONS.get(entry.type, "key")
@@ -90,7 +91,7 @@ class EntryListItemWidget(QWidget):
         elif not subtitle_text and entry.type == "note":
             subtitle_text = (entry.notes.splitlines()[0] if entry.notes else "")[:30]
         elif not subtitle_text:
-            subtitle_text = TYPE_LABELS.get(entry.type, "")
+            subtitle_text = tr(TYPE_LABELS.get(entry.type, ""))
 
         sub_lbl = label(subtitle_text or "—", "Meta", wrap=False)
         center.addWidget(sub_lbl)
@@ -227,7 +228,7 @@ class PasswordInspector(QWidget):
         p = self.theme.palette
 
         self.head_title.setText(entry.title or tr("(Başlıksız)"))
-        self.head_type.setText(TYPE_LABELS.get(entry.type, entry.type).upper())
+        self.head_type.setText(tr(TYPE_LABELS.get(entry.type, entry.type)).upper())
         icon_name = TYPE_ICONS.get(entry.type, "key")
         self.head_icon.setPixmap(self.theme.icon(icon_name, p.accent, size=24).pixmap(24, 24))
 
@@ -588,7 +589,7 @@ class PasswordView(QWidget):
         for c_key in ENTRY_TYPES:
             lbl = TYPE_LABELS[c_key]
             ic = TYPE_ICONS.get(c_key, "key")
-            btn = self._make_sidebar_btn(lbl, ic, lambda k=c_key: self._select_category(k))
+            btn = self._make_sidebar_btn(tr(lbl), ic, lambda k=c_key: self._select_category(k))
             self.cat_buttons[c_key] = btn
             side_l.addWidget(btn)
 

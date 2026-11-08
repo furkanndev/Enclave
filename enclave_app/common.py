@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
 
 from config import load_config
 
-from .i18n import tr
+from .i18n import language, tr
 from . import designs, icons
 
 @dataclass(frozen=True)
@@ -75,9 +75,15 @@ def logo_label(size: int = 56) -> QLabel:
 
 def format_size(size: int) -> str:
     value = float(size)
-    for unit in ("bayt", "KB", "MB", "GB"):
+    is_en = language() == "en"
+    byte_unit = "bytes" if is_en else "bayt"
+    for unit in (byte_unit, "KB", "MB", "GB"):
         if value < 1024 or unit == "GB":
-            text = f"{int(value)}" if unit == "bayt" else f"{value:.1f}".replace(".", ",")
+            if unit == byte_unit:
+                text = f"{int(value)}"
+            else:
+                formatted = f"{value:.1f}"
+                text = formatted if is_en else formatted.replace(".", ",")
             return f"{text} {unit}"
         value /= 1024
     return str(size)

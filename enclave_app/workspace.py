@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from PyQt6.QtCore import QRect, QRectF, QSize, Qt, QThread, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QIcon, QImage, QKeySequence, QPainter, QPainterPath, QPen, QPixmap, QShortcut
+from PyQt6.QtGui import QColor, QFontMetrics, QIcon, QImage, QKeySequence, QPainter, QPainterPath, QPen, QPixmap, QShortcut
 from PyQt6.QtWidgets import (
-    QAbstractItemView, QButtonGroup, QFileDialog, QFrame, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
+    QAbstractItemView, QButtonGroup, QFileDialog, QFrame, QGridLayout, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit,
     QListView, QListWidget, QListWidgetItem, QMenu, QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
     QScrollArea, QSizePolicy, QSplitter, QStackedWidget, QStyle, QStyledItemDelegate, QStyleOptionViewItem,
     QToolButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
@@ -37,6 +37,8 @@ from .session import (
 ROLE = Qt.ItemDataRole.UserRole
 THUMB_ROLE = Qt.ItemDataRole.UserRole + 2
 BADGE_ROLE = Qt.ItemDataRole.UserRole + 3
+META_ROLE = Qt.ItemDataRole.UserRole + 4
+TAG_ROLE = Qt.ItemDataRole.UserRole + 5
 BADGES = {
     "folder": ("#EEEDFE", "#3C3489", "folder"), "image": ("#FAECE7", "#712B13", "image"),
     "video": ("#FBEAF0", "#72243E", "video"), "audio": ("#EEEDFE", "#3C3489", "audio"),
@@ -90,11 +92,10 @@ class TileDelegate(QStyledItemDelegate):
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index) -> None:
         p = self.theme.palette
         radius = float(self.theme.design.radius)
+        card_radius = radius + 2.0
         selected = bool(option.state & QStyle.StateFlag.State_Selected)
         hovered = bool(option.state & QStyle.StateFlag.State_MouseOver)
         cell = option.rect.adjusted(5, 5, -5, -5)
-        name_height = option.fontMetrics.height() + 10
-        frame = QRectF(cell.x(), cell.y(), cell.width(), cell.height() - name_height)
 
         painter.save()
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -116,43 +117,116 @@ class TileDelegate(QStyledItemDelegate):
             painter.translate(0, (1 - eased) * 18 - level * 4)
             if reveal < 1.0 or level != target:
                 self._queue_refresh()
-        clip = QPainterPath()
-        clip.addRoundedRect(frame, radius, radius)
-        painter.fillPath(clip, QColor(p.surface_alt))
+
+        card_rect = QRectF(cell)
+        card_path = QPainterPath()
+        card_path.addRoundedRect(card_rect, card_radius, card_radius)
+
+        # Card Base Surface
+        if selected:
+            card_bg = QColor(p.surface)
+            painter.fillPath(card_path, card_bg)
+            sel_tint = QColor(p.accent)
+            sel_tint.setAlpha(28)
+            painter.fillPath(card_path, sel_tint)
+        elif hovered:
+            painter.fillPath(card_path, QColor(p.surface_alt))
+        else:
+            painter.fillPath(card_path, QColor(p.surface))
+
+        # Preview Window (letterboxed with inner surface)
+        preview_h = max(50.0, card_rect.height() - 56.0)
+        preview_rect = QRectF(card_rect.x() + 6, card_rect.y() + 6, card_rect.width() - 12, preview_h)
+        preview_path = QPainterPath()
+        preview_path.addRoundedRect(preview_rect, radius, radius)
+        painter.fillPath(preview_path, QColor(p.surface_alt))
+
         thumb = index.data(THUMB_ROLE)
         if isinstance(thumb, QPixmap) and not thumb.isNull():
-            painter.setClipPath(clip)
-            scale = max(frame.width() / thumb.width(), frame.height() / thumb.height())
+            painter.save()
+            painter.setClipPath(preview_path)
+            scale = max(preview_rect.width() / thumb.width(), preview_rect.height() / thumb.height())
             width, height = thumb.width() * scale, thumb.height() * scale
             painter.drawPixmap(
-                QRectF(frame.center().x() - width / 2, frame.center().y() - height / 2, width, height),
+                QRectF(preview_rect.center().x() - width / 2, preview_rect.center().y() - height / 2, width, height),
                 thumb, QRectF(thumb.rect())
             )
-            painter.setClipping(False)
+            painter.restore()
         else:
             tint, ink, symbol = BADGES.get(index.data(BADGE_ROLE) or "file", BADGES["file"])
-            size = int(min(frame.width(), frame.height()) * 0.56)
-            badge = QRectF(frame.center().x() - size / 2, frame.center().y() - size / 2, size, size)
+            size = int(min(preview_rect.width(), preview_rect.height()) * 0.52)
+            badge = QRectF(preview_rect.center().x() - size / 2, preview_rect.center().y() - size / 2, size, size)
             shape = QPainterPath()
-            shape.addRoundedRect(badge, 14, 14)
+            shape.addRoundedRect(badge, 12, 12)
             painter.fillPath(shape, QColor(tint))
-            icons.icon(symbol, ink, 32).paint(painter, badge.adjusted(size * .24, size * .24, -size * .24, -size * .24).toRect())
+            icons.icon(symbol, ink, 28).paint(painter, badge.adjusted(size * .22, size * .22, -size * .22, -size * .22).toRect())
+
+        # Type Tag Chip (top-right of preview)
+        tag = index.data(TAG_ROLE)
+        if tag:
+            tag_str = str(tag)[:5].upper()
+            tag_font = option.font
+            tag_font.setPixelSize(10)
+            tag_font.setBold(True)
+            tag_metrics = QFontMetrics(tag_font)
+            tag_w = tag_metrics.horizontalAdvance(tag_str) + 10
+            tag_rect = QRectF(preview_rect.right() - tag_w - 4, preview_rect.top() + 4, tag_w, 16)
+            tag_path = QPainterPath()
+            tag_path.addRoundedRect(tag_rect, 4, 4)
+            tag_bg = QColor(p.surface)
+            tag_bg.setAlpha(225)
+            painter.fillPath(tag_path, tag_bg)
+            painter.setPen(QPen(QColor(p.border), 1))
+            painter.drawPath(tag_path)
+            painter.setFont(tag_font)
+            painter.setPen(QColor(p.muted))
+            painter.drawText(tag_rect, Qt.AlignmentFlag.AlignCenter, tag_str)
+
+        # Subtle Card Divider
+        div_y = preview_rect.bottom() + 4
+        painter.setPen(QPen(QColor(p.border), 1))
+        painter.drawLine(int(card_rect.x() + 8), int(div_y), int(card_rect.right() - 8), int(div_y))
+
+        # Animated Glow
         if level > 0.01:
             for spread, alpha in ((7.0, 0.10), (4.5, 0.17), (2.0, 0.30)):
                 glow = QColor(p.accent)
                 glow.setAlphaF(alpha * level)
                 painter.setPen(QPen(glow, spread))
                 painter.setBrush(Qt.BrushStyle.NoBrush)
-                painter.drawRoundedRect(frame.adjusted(-spread / 2 + 1, -spread / 2 + 1, spread / 2 - 1, spread / 2 - 1),
-                                        radius + spread / 2, radius + spread / 2)
-        if selected or hovered:
-            painter.setPen(QPen(QColor(p.accent if selected or self.animated else p.muted), 2.5 if selected else 1))
-            painter.drawRoundedRect(frame.adjusted(1, 1, -1, -1), radius, radius)
+                painter.drawRoundedRect(card_rect.adjusted(-spread / 2 + 1, -spread / 2 + 1, spread / 2 - 1, spread / 2 - 1),
+                                        card_radius + spread / 2, card_radius + spread / 2)
 
-        name_rect = QRect(cell.x() + 2, int(frame.bottom()) + 4, cell.width() - 4, name_height - 4)
+        # Card Border
+        if selected:
+            painter.setPen(QPen(QColor(p.accent), 2.0))
+        elif hovered:
+            painter.setPen(QPen(QColor(p.accent if self.animated else p.border), 1.5))
+        else:
+            painter.setPen(QPen(QColor(p.border), 1.0))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawPath(card_path)
+
+        # Card Text: Title
+        name_rect = QRect(int(card_rect.x() + 8), int(div_y + 4), int(card_rect.width() - 16), 18)
+        title_font = option.font
+        title_font.setPixelSize(12)
+        title_font.setBold(True)
+        painter.setFont(title_font)
         painter.setPen(QColor(p.text))
         text = option.fontMetrics.elidedText(index.data(Qt.ItemDataRole.DisplayRole) or "", Qt.TextElideMode.ElideMiddle, name_rect.width())
-        painter.drawText(name_rect, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, text)
+        painter.drawText(name_rect, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter, text)
+
+        # Card Text: Metadata / Size
+        meta_rect = QRect(int(card_rect.x() + 8), int(div_y + 24), int(card_rect.width() - 16), 16)
+        meta_font = option.font
+        meta_font.setPixelSize(11)
+        meta_font.setBold(False)
+        painter.setFont(meta_font)
+        painter.setPen(QColor(p.muted))
+        meta_val = str(index.data(META_ROLE) or "")
+        painter.drawText(meta_rect, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter, meta_val)
+
         painter.restore()
 
 class FileRow(QTreeWidgetItem):
@@ -244,11 +318,57 @@ class DetailsPane(QFrame):
 
     def _layout_vertical(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(12)
-        layout.addWidget(self.preview, 3)
-        layout.addWidget(self.title)
-        layout.addWidget(self.meta)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(10)
+
+        self.preview_card = QFrame()
+        self.preview_card.setObjectName("Card")
+        pc_l = QVBoxLayout(self.preview_card)
+        pc_l.setContentsMargins(8, 8, 8, 8)
+        pc_l.addWidget(self.preview)
+        layout.addWidget(self.preview_card, 3)
+
+        self.info_card = QFrame()
+        self.info_card.setObjectName("Card")
+        ic_l = QVBoxLayout(self.info_card)
+        ic_l.setContentsMargins(12, 10, 12, 10)
+        ic_l.setSpacing(4)
+        ic_l.addWidget(self.title)
+        ic_l.addWidget(self.meta)
+        layout.addWidget(self.info_card)
+
+        self.overview_card = QFrame()
+        self.overview_card.setObjectName("Card")
+        oc_l = QVBoxLayout(self.overview_card)
+        oc_l.setContentsMargins(12, 10, 12, 10)
+        oc_l.setSpacing(6)
+        oc_l.addWidget(label(tr("Kasa Genel Bakış"), "Eyebrow"))
+
+        stat_grid = QGridLayout()
+        stat_grid.setSpacing(6)
+
+        def make_stat_box(title_s: str, val_attr: str) -> QFrame:
+            box = QFrame()
+            box.setObjectName("StatCard")
+            b_l = QVBoxLayout(box)
+            b_l.setContentsMargins(8, 6, 8, 6)
+            b_l.setSpacing(2)
+            b_l.addWidget(label(title_s, "Meta"))
+            val_lbl = label("—", wrap=False)
+            val_lbl.setStyleSheet("font-weight: 600; font-size: 13px;")
+            b_l.addWidget(val_lbl)
+            setattr(self, val_attr, val_lbl)
+            return box
+
+        stat_grid.addWidget(make_stat_box(tr("Dosyalar"), "stat_files_lbl"), 0, 0)
+        stat_grid.addWidget(make_stat_box(tr("Kullanılan"), "stat_used_lbl"), 0, 1)
+        stat_grid.addWidget(make_stat_box(tr("Sınır"), "stat_quota_lbl"), 1, 0)
+        stat_grid.addWidget(make_stat_box(tr("Güvenlik"), "stat_sec_lbl"), 1, 1)
+        self.stat_sec_lbl.setText("AES-256")
+        self.stat_sec_lbl.setStyleSheet(f"color: {self.theme.palette.accent}; font-weight: 700; font-size: 12px;")
+        oc_l.addLayout(stat_grid)
+        layout.addWidget(self.overview_card)
+
         layout.addStretch(1)
         actions = QHBoxLayout()
         actions.setSpacing(6)
@@ -316,11 +436,21 @@ class DetailsPane(QFrame):
         stats = self.session.stats()
         self.title.setText(self.session.name)
         quota = f" / {format_size(stats['quota'])}" if stats["quota"] else ""
-        self.meta.setText(f"{stats['count']} dosya\n{format_size(stats['used'])}{quota}")
+        self.meta.setText(tr("{} dosya\n{}", stats['count'], f"{format_size(stats['used'])}{quota}"))
+        if hasattr(self, "stat_files_lbl"):
+            self.stat_files_lbl.setText(str(stats['count']))
+        if hasattr(self, "stat_used_lbl"):
+            self.stat_used_lbl.setText(format_size(stats['used']))
+        if hasattr(self, "stat_quota_lbl"):
+            self.stat_quota_lbl.setText(format_size(stats['quota']) if stats['quota'] else tr("Dinamik"))
+        if hasattr(self, "overview_card"):
+            self.overview_card.show()
         self._set_actions()
 
     def show_many(self, count: int, size: int) -> None:
         self.clear_preview()
+        if hasattr(self, "overview_card"):
+            self.overview_card.hide()
         self._set_placeholder("file")
         self.title.setText(tr("{} öğe seçili", count))
         self.meta.setText(format_size(size))
@@ -328,6 +458,8 @@ class DetailsPane(QFrame):
 
     def show_folder(self, folder: str, count: int, size: int) -> None:
         self.clear_preview()
+        if hasattr(self, "overview_card"):
+            self.overview_card.hide()
         self._set_placeholder("folder")
         self.title.setText(folder.rsplit("/", 1)[-1])
         self.meta.setText(tr("Klasör\n{} dosya, {}", count, format_size(size)))
@@ -335,6 +467,8 @@ class DetailsPane(QFrame):
 
     def show_file(self, entry: Dict[str, Any]) -> None:
         self.clear_preview()
+        if hasattr(self, "overview_card"):
+            self.overview_card.hide()
         name = entry["path"].rsplit("/", 1)[-1]
         category = file_category(name)
         self.title.setText(name)
@@ -521,6 +655,8 @@ class Workspace(QWidget):
 
         self.empty = QWidget()
         empty_layout = QVBoxLayout(self.empty)
+        empty_layout.setContentsMargins(24, 24, 24, 24)
+        empty_layout.setSpacing(16)
         empty_layout.addStretch(1)
         empty_icon = QLabel(alignment=Qt.AlignmentFlag.AlignCenter)
         empty_icon.setPixmap(icons.icon_pixmap("folder-plus", p.muted, 44, 1.2))
@@ -528,6 +664,70 @@ class Workspace(QWidget):
         self.empty_text = label("", "Empty")
         self.empty_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_layout.addWidget(self.empty_text)
+
+        self.empty_cards = QWidget()
+        cards_layout = QHBoxLayout(self.empty_cards)
+        cards_layout.setContentsMargins(0, 10, 0, 10)
+        cards_layout.setSpacing(14)
+        cards_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        def make_action_card(title_txt: str, sub_txt: str, icon_name: str, callback: Callable) -> QPushButton:
+            card_btn = QPushButton()
+            card_btn.setObjectName("ActionCardButton")
+            card_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            card_btn.setMinimumWidth(210)
+            card_btn.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+            c_inner = QVBoxLayout(card_btn)
+            c_inner.setContentsMargins(14, 12, 14, 12)
+            c_inner.setSpacing(6)
+
+            ic_box = QFrame()
+            ic_box.setFixedSize(34, 34)
+            ic_box.setStyleSheet(f"background: {p.surface_alt}; border: 1px solid {p.border}; border-radius: 8px;")
+            ic_box_l = QVBoxLayout(ic_box)
+            ic_box_l.setContentsMargins(0, 0, 0, 0)
+            ic_box_l.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            ic_lbl = QLabel()
+            ic_lbl.setPixmap(t.icon(icon_name, p.accent, size=18).pixmap(18, 18))
+            ic_lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            ic_box_l.addWidget(ic_lbl)
+            c_inner.addWidget(ic_box)
+
+            tl = label(title_txt, "Section", wrap=False)
+            tl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            c_inner.addWidget(tl)
+
+            desc = label(sub_txt, "Meta", wrap=True)
+            desc.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            c_inner.addWidget(desc)
+
+            card_btn.clicked.connect(callback)
+            return card_btn
+
+        self.btn_card_add = make_action_card(
+            tr("Dosya Ekle"),
+            tr("Belgelerinizi şifreleyerek kasaya aktarın."),
+            "plus",
+            self.add_files
+        )
+        self.btn_card_folder = make_action_card(
+            tr("Yeni Klasör"),
+            tr("İçeriği düzenlemek için klasör oluşturun."),
+            "folder-plus",
+            self.new_folder
+        )
+        self.btn_card_pwd = make_action_card(
+            tr("Şifre Kasası"),
+            tr("Hesap, parola ve 2FA kodlarınızı yönetin."),
+            "key",
+            lambda: self.set_mode("passwords")
+        )
+
+        cards_layout.addWidget(self.btn_card_add)
+        cards_layout.addWidget(self.btn_card_folder)
+        cards_layout.addWidget(self.btn_card_pwd)
+
+        empty_layout.addWidget(self.empty_cards)
         empty_layout.addStretch(1)
 
         self.views = QStackedWidget()
@@ -854,7 +1054,12 @@ class Workspace(QWidget):
             self.views.setCurrentWidget(self.table if self.view_mode == "list" else self.grid)
             self.grid.setProperty("active", self.view_mode == "grid")
         else:
-            self.empty_text.setText(tr("Sonuç yok.") if searching else tr("Bu klasör boş.\nDosyaları buraya sürükleyin veya Dosya ekle'yi kullanın."))
+            if searching:
+                self.empty_text.setText(tr("Sonuç yok."))
+                self.empty_cards.hide()
+            else:
+                self.empty_text.setText(tr("Bu klasör boş.\nDosyaları buraya sürükleyin veya aşağıdaki hızlı kartları kullanın."))
+                self.empty_cards.show()
             self.views.setCurrentWidget(self.empty)
         self.view_button.setIcon(self.theme.icon(
             "list" if self.view_mode == "grid" else "grid",
@@ -872,7 +1077,7 @@ class Workspace(QWidget):
 
     def _update_status(self) -> None:
         stats = self.session.stats()
-        self.status.setText(f"{stats['count']} dosya")
+        self.status.setText(tr("{} dosya", stats['count']))
         self.capacity.set_values(stats["used"], stats["quota"])
         provider = cloud_provider(self.session.path)
         self.status.setToolTip(tr("Kasa {} klasöründe; aynı anda iki cihazda açmayın.", provider) if provider else "")
@@ -909,6 +1114,8 @@ class Workspace(QWidget):
             item = QListWidgetItem(self.theme.icon("folder", self.theme.palette.accent, 64), folder.rsplit("/", 1)[-1])
             item.setData(ROLE, ("folder", folder))
             item.setData(BADGE_ROLE, "folder")
+            item.setData(META_ROLE, tr("Klasör"))
+            item.setData(TAG_ROLE, "DIR")
             self.grid.addItem(item)
         for entry in files:
             name = entry["path"].rsplit("/", 1)[-1]
@@ -916,6 +1123,9 @@ class Workspace(QWidget):
             item.setData(ROLE, ("file", entry["id"]))
             item.setData(THUMB_ROLE, self._thumbs.get(entry["id"]))
             item.setData(BADGE_ROLE, file_category(name))
+            item.setData(META_ROLE, format_size(entry.get("size", 0)))
+            ext = Path(name).suffix.lstrip(".").upper()
+            item.setData(TAG_ROLE, ext[:5] if ext else "FILE")
             item.setToolTip(name)
             self.grid.addItem(item)
         self._grid_index = {self.grid.item(i).data(ROLE)[1]: self.grid.item(i) for i in range(self.grid.count())}

@@ -234,6 +234,22 @@ def build_stylesheet(design: Design, dark: bool) -> str:
     QFrame#SidebarPane {{ background: {p.surface}; border-right: 1px solid {p.border}; }}
     QFrame#EntryCard {{ background: {p.surface}; border: 1px solid {p.border}; border-radius: {r}px; }}
     QFrame#EntryCard:hover {{ background: {p.surface_alt}; border-color: {p.muted}; }}
+    QFrame#StatCard {{ background: {p.surface_alt}; border: 1px solid {p.border}; border-radius: {r}px; }}
+    QFrame#ActionCard {{ background: {p.surface}; border: 1px solid {p.border}; border-radius: {r + 4}px; }}
+    QFrame#ActionCard:hover {{ background: {p.surface_alt}; border: 1px solid {p.accent}; }}
+    QPushButton#ActionCardButton {{
+        text-align: left; background: {p.surface}; border: 1px solid {p.border};
+        border-radius: {r + 3}px; padding: 12px 14px;
+    }}
+    QPushButton#ActionCardButton:hover {{ background: {p.surface_alt}; border: 1px solid {p.accent}; }}
+    QPushButton#ActionCardButton:focus {{ border: 2px solid {p.accent}; padding: 11px 13px; }}
+    QPushButton#RecentVaultCard {{
+        text-align: left; background: {p.surface}; border: 1px solid {p.border};
+        border-radius: {r}px; padding: 10px 14px;
+    }}
+    QPushButton#RecentVaultCard:hover {{ background: {p.surface_alt}; border: 1px solid {p.accent}; }}
+    QPushButton#RecentVaultCard:focus {{ border: 2px solid {p.accent}; padding: 9px 13px; }}
+    QFrame#SecurityBadgeCard {{ background: {p.accent_soft}; border: 1px solid {p.border}; border-radius: {r}px; }}
     QToolButton#RailButton {{
         background: transparent; border: none; border-radius: {r}px; padding: 9px 4px; color: {tab_rail}; font-size: 12px;
     }}
