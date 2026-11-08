@@ -1,0 +1,36 @@
+name: Enclave CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Linux Qt Dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1 libglib2.0-0 libxcb-cursor0 libxkbcommon-x11-0
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Core engine tests
+        run: python -m unittest test_enclave_core test_enclave_custom test_enclave_stego test_enclave_passwords
+      - name: UI tests
+        run: python -m unittest test_enclave_app
+      - name: Build executable package
+        run: python build_exe.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: enclave-${{ matrix.os }}
+          path: dist/

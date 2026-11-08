@@ -1,0 +1,43 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller temporary build directory
+build/
+*.spec.bak
+dist/
+
+# Logs and scratch files
+logs/
+logs.txt
+scratch/
+
+# Rust Tauri Next-Gen (tracked in 'rust' branch)
+src-tauri/
+node_modules/
+package.json
+package-lock.json
+tsconfig.json
+vite.config.ts
+vault_pro_tauri/
+
+# Local virtual disks and temp directories
+enclaves/
+*.vhd
+*.vhdx
+*.vhd_temp
+.vhd_temp/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Kullaniciya ozel ayarlar (kasa adlari icerir)
+config.json
+
+# Yerel kasalar
+*.pvault
