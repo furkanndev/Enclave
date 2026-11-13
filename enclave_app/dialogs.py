@@ -99,7 +99,12 @@ class DialogBase(QDialog):
         height = max(height, need + chrome + 4)
         if screen:
             height = min(height, screen.height() - 60)
-        self.resize(width, height)
+        # İçeriğin en küçük genişliğinin altına inilirse yatay kaydırma kapalı olduğundan içerik kırpılır
+        floor = self.content.minimumSizeHint().width() + 16
+        if screen:
+            floor = min(floor, screen.width() - 40)
+        self.setMinimumWidth(floor)
+        self.resize(max(width, floor), height)
 
 class LoaderItemDelegate(QStyledItemDelegate):
     """Yükleme animasyonu listesinde her seçeneğin yanında kendi animasyonunu oynatır."""

@@ -33,6 +33,10 @@ from .pwd_engine import (
     evaluate_password, get_live_totp
 )
 
+def _breakable(text: str) -> str:
+    """Boşluksuz uzun metnin dar alanda satır kırabilmesi için karakterler arasına sıfır genişlikli boşluk koyar."""
+    return "​".join(text)
+
 class EntryListItemWidget(QFrame):
     """Orta sütundaki liste öğesi için kart bileşeni."""
 
@@ -210,6 +214,7 @@ class PasswordInspector(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         content = QWidget()
         self.fields_layout = QVBoxLayout(content)
         self.fields_layout.setContentsMargins(4, 4, 4, 4)
@@ -245,11 +250,13 @@ class PasswordInspector(QWidget):
             self.del_btn.setIcon(self.theme.icon("refresh"))
             self.purge_btn.show()
             self.edit_btn.setEnabled(False)
+            self.edit_btn.hide()
         else:
             self.del_btn.setText(tr("Sil"))
             self.del_btn.setIcon(self.theme.icon("trash"))
             self.purge_btn.hide()
             self.edit_btn.setEnabled(True)
+            self.edit_btn.show()
 
         self._clear_fields()
         self._populate_fields(entry)
@@ -361,8 +368,11 @@ class PasswordInspector(QWidget):
         v = QVBoxLayout()
         v.setSpacing(2)
         v.addWidget(label(title, "Eyebrow"))
-        val_lbl = label(display_val, wrap=True)
-        val_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        if "\n" in display_val:
+            val_lbl = label(display_val, wrap=True)
+            val_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        else:
+            val_lbl = ElidedLabel(display_val)
         val_lbl.setStyleSheet("font-size: 14px; font-weight: 500;")
         v.addWidget(val_lbl)
         c_l.addLayout(v, 1)
@@ -396,9 +406,9 @@ class PasswordInspector(QWidget):
         mid = QHBoxLayout()
         mid.setSpacing(10)
 
-        self.pwd_label = label("••••••••••••••••", wrap=False)
+        self.pwd_label = label(_breakable("•" * 16), wrap=True)
         self.pwd_label.setStyleSheet("font-family: monospace; font-size: 16px; font-weight: 600;")
-        self.pwd_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.pwd_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         mid.addWidget(self.pwd_label, 1)
 
         self.eye_btn = tool_button(
@@ -438,10 +448,10 @@ class PasswordInspector(QWidget):
             return
         self._pwd_revealed = not self._pwd_revealed
         if self._pwd_revealed:
-            self.pwd_label.setText(self.entry.password)
+            self.pwd_label.setText(_breakable(self.entry.password))
             self.eye_btn.setIcon(self.theme.icon("eye-off"))
         else:
-            self.pwd_label.setText("••••••••••••••••")
+            self.pwd_label.setText(_breakable("•" * 16))
             self.eye_btn.setIcon(self.theme.icon("eye"))
 
     def _totp_card(self, secret: str) -> QWidget:
@@ -453,7 +463,7 @@ class PasswordInspector(QWidget):
         c_l.setSpacing(8)
 
         head = QHBoxLayout()
-        head.addWidget(label(tr("İki Adımlı Doğrulama Kodu (TOTP)"), "Eyebrow", wrap=False))
+        head.addWidget(ElidedLabel(tr("İki Adımlı Doğrulama Kodu (TOTP)"), "Eyebrow"), 1)
         head.addStretch(1)
         c_l.addLayout(head)
 
@@ -465,7 +475,7 @@ class PasswordInspector(QWidget):
         token_row.addWidget(self.totp_lbl, 1)
 
         self.totp_copy_btn = tool_button(
-            tr("Kopyala"), self.theme.icon("clock"), self._copy_live_totp, tr("2FA Kodunu Kopyala")
+            "", self.theme.icon("copy"), self._copy_live_totp, tr("2FA Kodunu Kopyala")
         )
         token_row.addWidget(self.totp_copy_btn)
         c_l.addLayout(token_row)
@@ -654,7 +664,7 @@ class PasswordView(QWidget):
         p = self.theme.palette
         pane = QFrame()
         pane.setObjectName("Panel")
-        pane.setMinimumWidth(260)
+        pane.setMinimumWidth(300)
         layout = QVBoxLayout(pane)
         layout.setContentsMargins(12, 14, 12, 10)
         layout.setSpacing(10)

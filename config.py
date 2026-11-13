@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional
 from logger import BASE_DIR, USER_DATA_DIR
 
-APP_VERSION = "2.0"
+APP_VERSION = "2.0.1"
 CONFIG_FILE = USER_DATA_DIR / "config.json"
 LEGACY_CONFIG_FILE = BASE_DIR / "config.json"
 

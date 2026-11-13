@@ -253,7 +253,7 @@ def main():
     from enclave_app.common import app_icon
     app.setApplicationName("Enclave")
     app.setApplicationDisplayName("Enclave")
-    app.setApplicationVersion("2.0")
+    app.setApplicationVersion("2.0.1")
     app.setWindowIcon(app_icon())
 
     if use_windows_tools:

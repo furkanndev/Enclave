@@ -19,7 +19,7 @@ os.environ["APPDATA"] = _CONFIG_HOME
 os.environ["XDG_CONFIG_HOME"] = _CONFIG_HOME
 
 from PyQt6.QtWidgets import (
-    QAbstractScrollArea, QApplication, QCheckBox, QLabel, QPushButton, QScrollArea, QToolButton, QWidget,
+    QAbstractScrollArea, QApplication, QCheckBox, QComboBox, QLabel, QLineEdit, QPushButton, QScrollArea, QToolButton, QWidget,
 )
 
 import enclave_app.i18n as i18n
@@ -63,7 +63,8 @@ def _text(widget: QWidget) -> str:
 def find_problems(root: QWidget) -> list:
     """Kök pencere içindeki yerleşim sorunlarını metin olarak döndürür."""
     problems = []
-    app.processEvents()
+    for _ in range(3):
+        app.processEvents()
     for widget in root.findChildren(QWidget):
         if not widget.isVisibleTo(root) or widget.width() <= 0:
             continue
@@ -85,6 +86,9 @@ def find_problems(root: QWidget) -> list:
             hint = widget.sizeHint().width()
             if hint > widget.width() + TOLERANCE and widget.minimumSizeHint().width() > widget.width() + TOLERANCE:
                 problems.append(f"buton metni kırpılıyor: {name} gerek={hint} var={widget.width()}")
+        elif isinstance(widget, (QLineEdit, QComboBox)) and widget.isEnabled():
+            if widget.height() + TOLERANCE < widget.minimumSizeHint().height():
+                problems.append(f"alan yüksekliği yetersiz: {name} gerek={widget.minimumSizeHint().height()} var={widget.height()}")
         elif isinstance(widget, QCheckBox) and _text(widget):
             if widget.sizeHint().width() > widget.width() + TOLERANCE:
                 problems.append(f"onay kutusu metni kırpılıyor: {name} gerek={widget.sizeHint().width()} var={widget.width()}")

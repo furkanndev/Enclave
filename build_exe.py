@@ -14,7 +14,7 @@ from pathlib import Path
 try:
     from config import APP_VERSION
 except Exception:
-    APP_VERSION = "2.0"
+    APP_VERSION = "2.0.1"
 
 TARGET_EXE_NAME = "Enclave.exe"
 
