@@ -701,6 +701,8 @@ class Workspace(QWidget):
             desc.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
             c_inner.addWidget(desc)
 
+            desc.setMinimumHeight(desc.fontMetrics().lineSpacing() * 3)
+            card_btn.setMinimumHeight(c_inner.minimumSize().height())
             card_btn.clicked.connect(callback)
             return card_btn
 

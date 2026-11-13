@@ -7,7 +7,7 @@ from typing import Callable, List, Optional
 from PyQt6.QtCore import QTimer, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QInputDialog, QFileDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu,
-    QPushButton, QStackedWidget, QVBoxLayout, QWidget,
+    QPushButton, QScrollArea, QStackedWidget, QVBoxLayout, QWidget,
 )
 
 from config import load_config, save_config
@@ -162,9 +162,8 @@ class UnlockPage(QWidget):
         sec_l.setContentsMargins(14, 12, 14, 12)
         sec_l.setSpacing(8)
         sec_l.addWidget(label(tr("Güvenlik Politikası"), "Eyebrow"))
+        sec_l.addWidget(label(tr("Hareketsizlikte kilitle"), "Muted"))
         idle_row = QHBoxLayout()
-        idle_row.setSpacing(10)
-        idle_row.addWidget(label(tr("Hareketsizlikte kilitle"), "Muted", wrap=False))
         idle_row.addWidget(self.idle)
         idle_row.addStretch(1)
         sec_l.addLayout(idle_row)
@@ -237,11 +236,12 @@ class UnlockPage(QWidget):
 
         self.form_card = QFrame()
         self.form_card.setObjectName("Card")
+        self.form_card.setMinimumWidth(372)
         card_layout = QVBoxLayout(self.form_card)
         card_layout.setContentsMargins(26, 24, 26, 22)
         card_layout.addWidget(self.form_stack)
         right = QVBoxLayout()
-        right.setContentsMargins(36, 16, 20, 28)
+        right.setContentsMargins(28, 16, 16, 28)
         top = QHBoxLayout()
         top.setSpacing(4)
         top.addStretch(1)
@@ -250,16 +250,26 @@ class UnlockPage(QWidget):
         right.addLayout(top)
         right.addStretch(1)
         form_row = QHBoxLayout()
-        form_row.setContentsMargins(0, 0, 16, 0)
+        form_row.setContentsMargins(0, 0, 0, 0)
         form_row.addWidget(self.form_card)
         right.addLayout(form_row)
         right.addStretch(1)
+
+        cover.setMinimumWidth(120)
+        right_body = QWidget()
+        right_body.setLayout(right)
+        right_scroll = QScrollArea()
+        right_scroll.setWidgetResizable(True)
+        right_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        right_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        right_scroll.setWidget(right_body)
+        right_scroll.setMinimumWidth(372 + 44 + 14)
 
         row = QHBoxLayout(self)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(0)
         row.addWidget(cover, 5)
-        row.addLayout(right, 6)
+        row.addWidget(right_scroll, 6)
 
     def _arrange_poster(self) -> None:
         outer = QVBoxLayout(self)

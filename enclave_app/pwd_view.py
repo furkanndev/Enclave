@@ -574,7 +574,7 @@ class PasswordView(QWidget):
         self.splitter.setStretchFactor(0, 0)
         self.splitter.setStretchFactor(1, 1)
         self.splitter.setStretchFactor(2, 2)
-        self.splitter.setSizes([220, 340, 480])
+        self.splitter.setSizes([236, 330, 470])
 
         root.addWidget(self.splitter)
 
@@ -582,7 +582,7 @@ class PasswordView(QWidget):
         p = self.theme.palette
         side = QFrame()
         side.setObjectName("SidebarPane")
-        side.setMinimumWidth(180)
+        side.setMinimumWidth(236)
         side_l = QVBoxLayout(side)
         side_l.setContentsMargins(12, 14, 12, 14)
         side_l.setSpacing(6)

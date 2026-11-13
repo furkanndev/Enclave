@@ -423,9 +423,10 @@ class PasswordGeneratorDialog(DialogBase):
 
         layout.addWidget(horizontal_rule())
 
-        self.passphrase_chk = QCheckBox(tr("Parola Öbeği Modu (Kelimelerden oluşan akılda kalıcı parola)"))
+        self.passphrase_chk = QCheckBox(tr("Parola Öbeği Modu"))
         self.passphrase_chk.toggled.connect(self._on_passphrase_toggled)
         layout.addWidget(self.passphrase_chk)
+        layout.addWidget(label(tr("Kelimelerden oluşan akılda kalıcı parola"), "Muted"))
 
         self.body.addWidget(box)
         self.body.addStretch(1)
@@ -567,11 +568,13 @@ class ImportExportDialog(DialogBase):
         b_l = QVBoxLayout(box)
         b_l.setSpacing(10)
 
-        self.exp_encrypted = QRadioButton(tr("Şifreli Yedek (.pvault-pwd) - Güvenli, parola korumalı"))
+        self.exp_encrypted = QRadioButton(tr("Şifreli Yedek (.pvault-pwd)"))
         self.exp_encrypted.setChecked(True)
-        self.exp_csv = QRadioButton(tr("Düz Metin CSV (.csv) - Dikkat: Parolalar açık metin olarak yazılır!"))
+        self.exp_csv = QRadioButton(tr("Düz Metin CSV (.csv)"))
         b_l.addWidget(self.exp_encrypted)
+        b_l.addWidget(label(tr("Güvenli, parola korumalı"), "Muted"))
         b_l.addWidget(self.exp_csv)
+        b_l.addWidget(label(tr("Dikkat: Parolalar açık metin olarak yazılır!"), "Muted"))
 
         b_l.addWidget(label(tr("Yedek Parolası (Şifreli yedek için)"), "Eyebrow"))
         self.backup_pass = PasswordField(self.theme, tr("Yedek parolasını belirleyin"))
