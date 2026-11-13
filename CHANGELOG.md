@@ -30,6 +30,22 @@ A maintenance release focused on user interface stability: overflow, clipping, a
 ### Changed
 - Refreshed the README screenshots and documentation.
 
+### Türkçe
+
+Arayüz kararlılığına odaklanan bakım sürümü: uygulama genelinde taşma, kırpılma ve hizalama sorunları düzeltildi, otomatik yerleşim regresyon testleri eklendi.
+
+**Düzeltmeler**
+- **Şifre yöneticisi:** Uzun başlıklar tek satırda "…" ile kısalıyor. Parola, TOTP ve not kartları üst üste binmiyor. Kayıt listesindeki yatay kaydırma kaldırıldı. Uzun parolalar satır kırıyor, uzun URL ve kullanıcı adları kısaltılıp ipucu gösteriliyor. Kayıt eylemleri başlığın altına taşındı, kenar çubuğu ve liste paneli genişletildi.
+- **Diyaloglar:** Pencereler içeriğine göre boyutlanıyor ve gereken en küçük genişliği koruyor. Uzun onay kutusu ve seçenek metinleri başlık ve açıklamaya ayrıldı. Ayarlar'daki "Bu kasa" sekmesi yatay taşmıyor.
+- **Kilit ekranı:** Küçük pencerede sağ sütun kaydırılabiliyor, "Kasayı hatırla" ve güvenlik politikası ayarları kırpılmıyor.
+- **Çalışma alanı:** Boş kasa ekranındaki eylem kartları açıklama metni için yeterli yüksekliği ayırıyor.
+
+**Eklenenler**
+- Pencereleri Türkçe ve İngilizce, birkaç boyutta açıp kırpılan metin, taşan öğe ve beklenmeyen yatay kaydırmayı yakalayan yerleşim regresyon testleri (`ENCLAVE_FULL_MATRIX=1` ile tüm stil/renk/mod matrisi çalışır).
+
+**Değişenler**
+- README ekran görüntüleri ve dokümantasyon yenilendi.
+
 ## [2.0.0]
 
 Initial release of Enclave v2.0: zero-knowledge encrypted vault and integrated password manager.
