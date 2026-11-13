@@ -1,12 +1,13 @@
 # Enclave
 
+[![Release](https://img.shields.io/github/v/release/furkanndev/Enclave?label=release)](https://github.com/furkanndev/Enclave/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python Version](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Encryption](https://img.shields.io/badge/Encryption-AES--256--GCM%20%7C%20Argon2id-success.svg)](#security-architecture)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#cross-platform-architecture)
 [![Zero Forensic Traces](https://img.shields.io/badge/Forensics-Zero%20Trace%20RAM--Only-red.svg)](#zero-forensic-traces--memory-hygiene)
 
-> **Enclave** is a high-security, zero-knowledge encrypted vault, steganographic media carrier, and integrated password manager. It protects your most confidential files, credentials, and digital assets across Windows, macOS, and Linux without leaving forensic traces on disk.
+> **Enclave** is a zero-knowledge encrypted vault, steganographic media carrier, and integrated password manager. It protects sensitive files, credentials, and digital assets on Windows, macOS, and Linux while minimizing forensic traces on disk.
 
 ---
 
@@ -19,6 +20,7 @@
   - [3. Integrated Password & Secret Manager](#3-integrated-password--secret-manager)
   - [4. Zero Forensic Traces & Memory Hygiene](#4-zero-forensic-traces--memory-hygiene)
   - [5. Windows Virtual Disk (VHD/VHDX) & BitLocker](#5-windows-virtual-disk-vhdvhdx--bitlocker)
+- [Download](#download)
 - [Installation & Quick Start](#installation--quick-start)
 - [Building Standalone Executables](#building-standalone-executables)
 - [Command Line Interface (CLI)](#command-line-interface-cli)
@@ -75,12 +77,12 @@ Customizable design tokens with Apple Minimal and Fluent themes, automatic idle 
 ## Key Capabilities
 
 - **Cross-Platform Compatibility:** Runs natively on Windows 10/11, macOS (Apple Silicon & Intel), and Linux (Ubuntu, Debian, Fedora, Arch).
-- **Military-Grade Cryptography:** Authenticated **AES-256-GCM** encryption with state-of-the-art **Argon2id** key derivation (256 MiB memory, 3 iterations) and PBKDF2 backwards-compatibility.
-- **Polyglot Carrier Steganography:** Disguises an entire encrypted container inside ordinary media files (MP4, MKV, FLAC, MP3, PNG, JPG, ISO, ZIP). Files play and render completely normally in VLC or Windows Media Player while leaving zero unencrypted signatures.
+- **Modern Cryptography:** Authenticated **AES-256-GCM** encryption with state-of-the-art **Argon2id** key derivation (256 MiB memory, 3 iterations) and PBKDF2 backwards-compatibility.
+- **Polyglot Carrier Steganography:** Disguises an entire encrypted container inside ordinary media files (MP4, MKV, FLAC, MP3, PNG, JPG, ISO, ZIP). Files play and render completely normally in VLC or Windows Media Player without exposing any unencrypted signature.
 - **Decoy Vault & Plausible Deniability:** Create a dual-compartment vault with two separate passwords. Unlocking with the decoy password shows benign files, concealing the existence of the primary vault.
 - **Integrated Password Manager:** Securely store logins, payment cards, API keys, secure notes, and identities with real-time 30-second TOTP tokens and automated clipboard scrubbing.
-- **Zero Forensic Footprint:** All thumbnails, decrypted previews, and icon caches are rendered strictly in RAM (`RAM-Only`). Temporary files generated for viewing are sanitized with DoD 5220.22-M zero-byte overwriting and forced `os.fsync`.
-- **Global Emergency Panic Switch (`Ctrl + Alt + L`):** Instantly closes open explorer windows, unmounts drives, purges temporary memory buffers, and minimizes the application to the tray in 0 milliseconds.
+- **Minimal Forensic Footprint:** All thumbnails, decrypted previews, and icon caches are rendered strictly in RAM (`RAM-Only`). Temporary files generated for viewing are sanitized with DoD 5220.22-M zero-byte overwriting and forced `os.fsync`.
+- **Global Emergency Panic Switch (`Ctrl + Alt + L`):** Instantly closes open explorer windows, unmounts drives, purges temporary memory buffers, and minimizes the application to the tray immediately.
 - **Auto-Lock on Workstation Lock (`Win + L`):** Monitors Windows session change events and automatically locks the vault and dismounts virtual drives whenever the user locks the OS or an idle timer expires.
 
 ---
@@ -140,6 +142,12 @@ Customizable design tokens with Apple Minimal and Fluent themes, automatic idle 
 
 ---
 
+## Download
+
+Prebuilt packages and release notes are published on the [Releases page](https://github.com/furkanndev/Enclave/releases/latest). The latest version is **2.0.1**. See the [changelog](CHANGELOG.md) for details.
+
+---
+
 ## Installation & Quick Start
 
 ### Prerequisites
@@ -150,8 +158,8 @@ Customizable design tokens with Apple Minimal and Fluent themes, automatic idle 
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/enclave.git
-   cd enclave
+   git clone https://github.com/furkanndev/Enclave.git
+   cd Enclave
    ```
 
 2. **Create and activate a virtual environment (recommended):**
@@ -232,7 +240,7 @@ Enclave provides a rich CLI for automation, scripted backups, and headless envir
 ### What Enclave Protects Against:
 - **Offline Data Theft:** If a laptop, USB stick, or backup drive containing an Enclave vault is lost or stolen, files and passwords cannot be decrypted without the master passphrase and key file.
 - **Forensic Cold-Boot & Disk Recovery:** Unencrypted thumbnails, previews, and decrypted fragments are never written to disk caches or temporary swap files.
-- **Shoulder Surfing & Coercion:** Decoy vaults allow you to disclose a valid secondary password under duress while keeping primary data mathematically inaccessible.
+- **Shoulder Surfing & Coercion:** Decoy vaults allow you to disclose a valid secondary password under duress while keeping the primary vault inaccessible without its own password.
 - **Active Surveillance & Censorship:** Media carrier steganography allows confidential archives to be transferred across networks or border checkpoints disguised as standard family videos or audio tracks.
 - **Clipboard Snoopers:** Passwords copied to the clipboard are hidden from Windows Cloud Clipboard and auto-purged from memory within 30 seconds.
 
