@@ -229,8 +229,11 @@ try:
     # Select AWS entry
     ws.pwd_view.list_widget.setCurrentRow(0)
     ws.pwd_view._on_item_selected(ws.pwd_view.list_widget.currentItem(), None)
+    for _ in range(4):
+        app.processEvents()
+    ws.repaint()
     app.processEvents()
-    
+
     pix03 = ws.grab()
     pix03.save(str(out_dir / "03_password_manager_en.png"))
     print("Saved 03_password_manager_en.png")
@@ -239,7 +242,6 @@ try:
     pwd_gen = PasswordGeneratorDialog(theme)
     pwd_gen.result_edit.setText("kP9#vX2$mQ8@wL5&zR")
     pwd_gen.strength_lbl.setText("Password Strength: Strong (4/4)")
-    pwd_gen.resize(540, 520)
     pwd_gen.show()
     app.processEvents()
     
@@ -250,7 +252,6 @@ try:
 
     print("[5/6] Generating 05_security_audit_en.png...")
     audit = HealthAuditDialog(theme, store)
-    audit.resize(640, 600)
     audit.show()
     app.processEvents()
     
@@ -262,7 +263,6 @@ try:
     print("[6/6] Generating 06_settings_theme_en.png...")
     settings = SettingsDialog(theme, session)
     settings.tabs.setCurrentIndex(0)
-    settings.resize(800, 760)
     settings.show()
     app.processEvents()
     

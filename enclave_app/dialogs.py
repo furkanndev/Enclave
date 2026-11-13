@@ -90,7 +90,15 @@ class DialogBase(QDialog):
     def fit_to_screen(self, width: int, height: int) -> None:
         screen = self.screen().availableGeometry() if self.screen() else None
         if screen:
-            width, height = min(width, screen.width() - 40), min(height, screen.height() - 60)
+            width = min(width, screen.width() - 40)
+        # İçerik sığmıyorsa pencereyi içeriğe göre büyüt (ekran sınırına kadar)
+        lay = self.body
+        need = lay.totalHeightForWidth(width) if lay.hasHeightForWidth() else lay.sizeHint().height()
+        need = max(need, lay.sizeHint().height())
+        chrome = self.status.sizeHint().height() + self.footer.sizeHint().height()
+        height = max(height, need + chrome + 4)
+        if screen:
+            height = min(height, screen.height() - 60)
         self.resize(width, height)
 
 class LoaderItemDelegate(QStyledItemDelegate):

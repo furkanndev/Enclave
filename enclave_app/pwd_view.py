@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
 
 from . import icons
 from .common import (
-    SearchBox, Theme, button, confirm, copy_secret, format_date,
+    ElidedLabel, SearchBox, Theme, button, confirm, copy_secret, format_date,
     horizontal_rule, label, tool_button
 )
 from .i18n import tr
@@ -65,9 +65,9 @@ class EntryListItemWidget(QFrame):
 
         top_row = QHBoxLayout()
         top_row.setSpacing(6)
-        title_lbl = label(entry.title or tr("(Başlıksız)"), wrap=False)
+        title_lbl = ElidedLabel(entry.title or tr("(Başlıksız)"))
         title_lbl.setStyleSheet("font-weight: 600; font-size: 14px;")
-        top_row.addWidget(title_lbl)
+        top_row.addWidget(title_lbl, 1)
 
         if entry.favorite:
             star_lbl = QLabel()
@@ -82,7 +82,6 @@ class EntryListItemWidget(QFrame):
             )
             top_row.addWidget(totp_badge)
 
-        top_row.addStretch(1)
         center.addLayout(top_row)
 
         subtitle_text = entry.username
@@ -93,7 +92,7 @@ class EntryListItemWidget(QFrame):
         elif not subtitle_text:
             subtitle_text = tr(TYPE_LABELS.get(entry.type, ""))
 
-        sub_lbl = label(subtitle_text or "—", "Meta", wrap=False)
+        sub_lbl = ElidedLabel(subtitle_text or "—", "Meta")
         center.addWidget(sub_lbl)
         layout.addLayout(center, 1)
 
@@ -103,7 +102,8 @@ class EntryListItemWidget(QFrame):
                 lambda: self._copy_text(entry.username, tr("Kullanıcı adı kopyalandı")),
                 tr("Kullanıcı Adını Kopyala")
             )
-            user_btn.setFixedSize(28, 28)
+            user_btn.setFixedSize(30, 30)
+            user_btn.setStyleSheet("padding: 0px;")
             layout.addWidget(user_btn)
 
         if entry.password:
@@ -112,7 +112,8 @@ class EntryListItemWidget(QFrame):
                 lambda: self._copy_pwd(entry.password),
                 tr("Parolayı Kopyala (30s)")
             )
-            pwd_btn.setFixedSize(28, 28)
+            pwd_btn.setFixedSize(30, 30)
+            pwd_btn.setStyleSheet("padding: 0px;")
             layout.addWidget(pwd_btn)
 
     def _copy_text(self, text: str, msg: str) -> None:
@@ -181,11 +182,13 @@ class PasswordInspector(QWidget):
 
         head_text_col = QVBoxLayout()
         head_text_col.setSpacing(2)
-        self.head_title = label("", "Title")
-        self.head_type = label("", "Eyebrow")
+        self.head_title = ElidedLabel("", "Title")
+        self.head_type = ElidedLabel("", "Eyebrow")
         head_text_col.addWidget(self.head_title)
         head_text_col.addWidget(self.head_type)
         top_box.addLayout(head_text_col, 1)
+
+        det_l.addLayout(top_box)
 
         self.fav_btn = tool_button("", self.theme.icon("star"), self._on_fav_click, tr("Favorilere Ekle / Çıkar"))
         self.edit_btn = tool_button(tr("Düzenle"), self.theme.icon("edit"), self._on_edit_click, tr("Kaydı Düzenle"))
@@ -194,11 +197,13 @@ class PasswordInspector(QWidget):
         self.purge_btn.setObjectName("Danger")
         self.purge_btn.hide()
 
-        top_box.addWidget(self.fav_btn)
-        top_box.addWidget(self.edit_btn)
-        top_box.addWidget(self.del_btn)
-        top_box.addWidget(self.purge_btn)
-        det_l.addLayout(top_box)
+        action_row = QHBoxLayout()
+        action_row.setSpacing(8)
+        for _b in (self.fav_btn, self.edit_btn, self.del_btn, self.purge_btn):
+            _b.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            action_row.addWidget(_b)
+        action_row.addStretch(1)
+        det_l.addLayout(action_row)
 
         det_l.addWidget(horizontal_rule())
 
@@ -208,7 +213,7 @@ class PasswordInspector(QWidget):
         content = QWidget()
         self.fields_layout = QVBoxLayout(content)
         self.fields_layout.setContentsMargins(4, 4, 4, 4)
-        self.fields_layout.setSpacing(14)
+        self.fields_layout.setSpacing(10)
         scroll.setWidget(content)
         det_l.addWidget(scroll, 1)
 
@@ -254,15 +259,20 @@ class PasswordInspector(QWidget):
             self._totp_timer.start()
 
     def _clear_fields(self) -> None:
-        while self.fields_layout.count():
-            item = self.fields_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-            elif item.layout():
-                while item.layout().count():
-                    sub = item.layout().takeAt(0)
-                    if sub.widget():
-                        sub.widget().deleteLater()
+        def purge(layout) -> None:
+            while layout.count():
+                item = layout.takeAt(0)
+                widget = item.widget()
+                if widget is not None:
+                    widget.hide()
+                    widget.setParent(None)
+                    widget.deleteLater()
+                elif item.layout() is not None:
+                    purge(item.layout())
+        purge(self.fields_layout)
+        for attr in ("pwd_label", "eye_btn", "totp_lbl", "totp_bar", "totp_sec_lbl", "totp_copy_btn"):
+            if hasattr(self, attr):
+                delattr(self, attr)
 
     def _populate_fields(self, entry: PasswordEntry) -> None:
         p = self.theme.palette
@@ -321,7 +331,7 @@ class PasswordInspector(QWidget):
             tag_box.addStretch(1)
             self.fields_layout.addLayout(tag_box)
 
-        self.fields_layout.addSpacing(6)
+        self.fields_layout.addSpacing(2)
         self.fields_layout.addWidget(horizontal_rule())
         meta_row = QHBoxLayout()
         created_str = format_date(entry.created_at)
@@ -443,7 +453,7 @@ class PasswordInspector(QWidget):
         c_l.setSpacing(8)
 
         head = QHBoxLayout()
-        head.addWidget(label(tr("İki Adımlı Doğrulama Kodu (TOTP)"), "Eyebrow"))
+        head.addWidget(label(tr("İki Adımlı Doğrulama Kodu (TOTP)"), "Eyebrow", wrap=False))
         head.addStretch(1)
         c_l.addLayout(head)
 
@@ -675,6 +685,9 @@ class PasswordView(QWidget):
 
         self.list_widget = QListWidget()
         self.list_widget.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+        self.list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.list_widget.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
+        self.list_widget.setSpacing(2)
         self.list_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.list_widget.customContextMenuRequested.connect(self._show_list_context_menu)
         self.list_widget.currentItemChanged.connect(self._on_item_selected)
@@ -751,7 +764,7 @@ class PasswordView(QWidget):
         for entry in entries:
             item = QListWidgetItem()
             card = EntryListItemWidget(entry, self.theme)
-            item.setSizeHint(card.sizeHint())
+            item.setSizeHint(QSize(0, card.sizeHint().height()))
             item.setData(Qt.ItemDataRole.UserRole, entry.id)
             self.list_widget.addItem(item)
             self.list_widget.setItemWidget(item, card)

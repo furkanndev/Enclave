@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from PyQt6.QtCore import QEvent, QMimeData, QPointF, QRectF, QThread, QTimer, Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
+from PyQt6.QtGui import QColor, QFontMetrics, QIcon, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import (
     QApplication, QFrame, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QProgressBar, QPushButton, QSizePolicy, QToolButton,
     QVBoxLayout, QWidget,
@@ -97,6 +97,40 @@ def label(text: str = "", name: str = "", wrap: bool = True) -> QLabel:
         widget.setObjectName(name)
     widget.setWordWrap(wrap)
     return widget
+
+class ElidedLabel(QLabel):
+    """Tek satırlık, sığmayınca sonuna '…' koyan ve yerleşimi genişletmeyen etiket."""
+
+    def __init__(self, text: str = "", name: str = "", parent: Optional[QWidget] = None):
+        super().__init__(parent)
+        if name:
+            self.setObjectName(name)
+        self._full = ""
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.setMinimumWidth(0)
+        self.setText(text)
+
+    def setText(self, text: str) -> None:
+        self._full = text
+        self.setToolTip(text)
+        self._apply()
+
+    def text(self) -> str:
+        return self._full
+
+    def minimumSizeHint(self):
+        hint = super().minimumSizeHint()
+        hint.setWidth(0)
+        return hint
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._apply()
+
+    def _apply(self) -> None:
+        width = max(0, self.width() - 2)
+        shown = QFontMetrics(self.font()).elidedText(self._full, Qt.TextElideMode.ElideRight, width) if width else self._full
+        QLabel.setText(self, shown)
 
 def button(text: str, name: str = "", on_click: Optional[Callable] = None, icon_: Optional[QIcon] = None) -> QPushButton:
     widget = QPushButton(text)
